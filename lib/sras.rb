@@ -1,7 +1,7 @@
-#!/usr/bin/env ruby
+#require 'bundler'
+#Bundler.setup
 
-require 'bundler'
-Bundler.setup
+require 'bundler/setup'
 
 require 'sinatra'
 require 'erb'
@@ -10,6 +10,7 @@ require 'digest/sha2'
 require 'hpricot'
 
 class SRAS < Sinatra::Application
+    set :views, Proc.new { File.join(root, "sras/views") }
 
     get '/' do
         erb :index
@@ -92,5 +93,5 @@ class SRAS < Sinatra::Application
 
 end
 
-require ::File.dirname(__FILE__) + '/helpers/init'
-require ::File.dirname(__FILE__) + '/models/init'
+require ::File.dirname(__FILE__) + '/sras/helpers/init'
+require ::File.dirname(__FILE__) + '/sras/models/init'

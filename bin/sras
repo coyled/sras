@@ -1,18 +1,37 @@
 #!/usr/bin/env ruby
 
 require 'optparse'
+require 'yaml'
+require 'thin'
 
 options = {}
+ROOT = ::File.dirname(::File.realdirpath(__FILE__))
+
+# defaults...
+options[:environment] = 'production'
+options[:config_file] = '/etc/sras/sras.conf'
+
+# look for more appropriate SRAS config file...
+if File.exists?("#{ROOT}/config/config.yml")
+    options[:config_file] = "#{ROOT}/config/config.yml"
+elsif File.exists?(File.expand_path('~/.srasrc'))
+    options[:config_file] = File.expand_path('~/.srasrc')
+end
 
 OptionParser.new do |opts|
-    #defaults...
-    options[:environment] = 'production'
-
     opts.banner = 'Usage: sras [options] <start|stop>'
+
+    opts.on('-c', '--config <file>', 'SRAS config file') do |c|
+        options[:config_file] = c
+    end
 
     opts.on('-e', '--environment <production|development|test>',
                 'Environment in which to run') do |e|
         options[:environment] = e
+    end
+
+    opts.on('-h', '--host <hostname|ip_addy>', 'Address to which to bind') do |h|
+        options[:host] = h
     end
 
     opts.on('-p', '--port <N>', Integer, 'TCP port to which to bind') do |p|
@@ -20,11 +39,11 @@ OptionParser.new do |opts|
     end
 
     opts.on('-l', '--log <file>', 'Log file') do |l|
-        options[:log] = l
+        options[:log_file] = l
     end
 
-    opts.on('-P', '--pidfile <file>', 'PID file') do |p|
-        options[:pidfile] = p
+    opts.on('-P', '--pid <file>', 'PID file') do |p|
+        options[:pid_file] = p
     end
 
     opts.on_tail('-h', '--help', 'Show this message') do
@@ -46,26 +65,53 @@ OptionParser.new do |opts|
     end 
 end.parse!
 
+# load SRAS config file...
+if File.exists?(options[:config_file])
+    @config = YAML.load_file(options[:config_file])
+else
+    warn "Couldn't find SRAS config file.  Exiting."
+    exit 1
+end
+
 # base thin options...
-thin_opts = "--tag sras -d -R #{::File.dirname(__FILE__)}/../config.ru"
-thin_opts << " -e #{options[:environment]}"
+#-d -R #{::File.dirname(__FILE__)}/../config.ru"
+#thin_opts << " -e #{options[:environment]}"
 
-if options[:log]
-    thin_opts << " -l #{options[:log]}"
-else
-    thin_opts << " -l log/sras_#{options[:environment]}.log"
+if ! options[:host]
+    if @config['sras'][options[:environment]]['host']
+        options[:host] = @config['sras'][options[:environment]]['host']    
+    else
+        options[:host] = '0.0.0.0'
+    end
 end
 
-if options[:port]
-    thin_opts << " -p #{options[:port]}"
-else
-    thin_opts << " -p 8003"
+if ! options[:port]
+    if @config['sras'][options[:environment]]['port']
+        options[:port] = @config['sras'][options[:environment]]['port']
+    else
+        options[:port] = '8003'
+    end
 end
 
-if options[:pidfile]
-    thin_opts << " -P #{options[:pidfile]}"
-else
-    thin_opts << " -P /tmp/sras_#{options[:environment]}.pid"
+if ! options[:log_file]
+    if @config['sras'][options[:environment]]['log_file']
+        options[:log_file] = @config['sras'][options[:environment]]['log_file']
+    else
+        options[:log_file] = "log/sras_#{options[:environment]}.log"
+    end
 end
 
-system "/usr/bin/env thin #{thin_opts} #{options[:command]}"
+if ! options[:pid_file]
+    if @config['sras'][options[:environment]]['pid_file']
+        options[:pid_file] = @config['sras'][options[:environment]]['pid_file']
+    else
+        options[:pid_file] = "/tmp/sras_#{options[:environment]}.pid"
+    end
+end
+
+require "#{ROOT}/../lib/sras.rb"
+server = Thin::Server.new(options[:host], options[:port], SRAS.new)
+server.log_file = options[:log_file]
+server.pid_file = options[:pid_file]
+server.tag = 'sras'
+server.start

@@ -8,10 +8,10 @@ require 'dm-migrations'
 #    t.verbose = true
 #end
 
-require ::File.dirname(__FILE__) + '/helpers/init'
+require ::File.dirname(__FILE__) + '/lib/sras/helpers/init'
 
 namespace 'db' do
-    require ::File.dirname(__FILE__) + '/models/init'
+    require ::File.dirname(__FILE__) + '/lib/sras/models/init'
 
     task :create do
         DataMapper.auto_upgrade!

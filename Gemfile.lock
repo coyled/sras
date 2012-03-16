@@ -1,3 +1,16 @@
+PATH
+  remote: .
+  specs:
+    sras (2.1.1.pre.9)
+      dm-migrations (= 1.1.0)
+      dm-mysql-adapter (= 1.1.0)
+      dm-timestamps (= 1.1.0)
+      dm-types (= 1.1.0)
+      hpricot (= 0.8.4)
+      rake (= 0.9.2.2)
+      sinatra (= 1.2.6)
+      thin (= 1.2.11)
+
 GEM
   remote: http://rubygems.org/
   specs:
@@ -48,11 +61,4 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  dm-migrations
-  dm-mysql-adapter
-  dm-timestamps
-  dm-types
-  hpricot
-  rake
-  sinatra
-  thin
+  sras!

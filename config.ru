@@ -1,3 +1,3 @@
-root = ::File.dirname(::File.realdirpath(__FILE__))
-require "#{root}/app.rb"
+ROOT = ::File.dirname(::File.realdirpath(__FILE__))
+require "#{ROOT}/lib/sras.rb"
 run SRAS.new
